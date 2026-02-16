@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mathe Rückblick: Kapitel 3 - Ableitung</title>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- KaTeX for Math Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Noto Sans', sans-serif; background-color: #f8fafc; }
+        
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .transition-all-300 { transition: all 0.3s ease; }
+        
+        /* Make math bigger and clearer */
+        .katex { font-size: 1.1em; }
+        .katex-display { margin: 1em 0; overflow-x: auto; overflow-y: hidden; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // --- Icons ---
+        const Icon = ({ name, size = 24, className }) => {
+            const icons = {
+                'Home': <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>,
+                'TrendingUp': <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>,
+                'Activity': <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>,
+                'BookOpen': <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>,
+                'CheckCircle': <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>,
+                'ArrowLeft': <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>,
+                'Calculator': <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line><path d="M16 10h.01"></path><path d="M12 10h.01"></path><path d="M8 10h.01"></path><path d="M12 14h.01"></path><path d="M8 14h.01"></path><path d="M12 18h.01"></path><path d="M8 18h.01"></path></svg>,
+                'GitBranch': <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>,
+                'Divide': <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="6" r="2"></circle><line x1="5" y1="12" x2="19" y2="12"></line><circle cx="12" cy="18" r="2"></circle></svg>,
+                'ArrowRight': <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>,
+                'GraduationCap': <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>,
+                'ChevronDown': <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="6 9 12 15 18 9"></polyline></svg>,
+                'ChevronUp': <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="18 15 12 9 6 15"></polyline></svg>
+            };
+            return icons[name] || null;
+        };
+
+        // --- Math Component (using KaTeX) ---
+        const MathFormula = ({ tex, display = false, className = "" }) => {
+            const containerRef = useRef(null);
+
+            useEffect(() => {
+                if (window.katex && containerRef.current) {
+                    try {
+                        window.katex.render(tex, containerRef.current, {
+                            throwOnError: false,
+                            displayMode: display,
+                            output: 'html'
+                        });
+                    } catch (e) {
+                        console.error("KaTeX Error:", e);
+                        containerRef.current.innerText = tex;
+                    }
+                }
+            }, [tex, display]);
+
+            return <span ref={containerRef} className={`${className}`} />;
+        };
+
+        // --- Mixed Text and Math Component ---
+        const TextWithMath = ({ text }) => {
+            if (!text) return null;
+            // Split by regex that captures content between $...$
+            // The parentheses in regex keep the separator in the result array
+            const segments = text.split(/(\$[^$]+\$)/g);
+            
+            return (
+                <span>
+                    {segments.map((segment, index) => {
+                        if (segment.startsWith('$') && segment.endsWith('$')) {
+                            // It is math, strip $ and render MathFormula
+                            return <MathFormula key={index} tex={segment.slice(1, -1)} />;
+                        } else {
+                            // It is text
+                            return <span key={index}>{segment}</span>;
+                        }
+                    })}
+                </span>
+            );
+        };
+
+        // --- Precise Graph Visualizer ---
+        const PreciseGraph = ({ mode, h, setH }) => {
+            const width = 350;
+            const height = 250;
+            const scaleX = 40;
+            const scaleY = 40;
+            const offsetX = 30; 
+            const offsetY = 220; 
+            
+            const f = (x) => 0.25 * x * x;
+            
+            const x1 = 2;
+            const y1 = f(x1); 
+            
+            const x2 = x1 + h;
+            const y2 = f(x2);
+            
+            const toSvgX = (x) => offsetX + x * scaleX;
+            const toSvgY = (y) => offsetY - y * scaleY;
+
+            const pathData = useMemo(() => {
+                let d = "";
+                for (let x = 0; x <= 6; x += 0.1) {
+                    const sx = toSvgX(x);
+                    const sy = toSvgY(f(x));
+                    if (x === 0) d += `M ${sx} ${sy}`;
+                    else d += ` L ${sx} ${sy}`;
+                }
+                return d;
+            }, []);
+
+            return (
+                <div className="flex flex-col items-center bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="relative mb-4">
+                        <svg width={width} height={height} className="overflow-visible">
+                            <defs>
+                                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+                                </marker>
+                            </defs>
+                            
+                            <line x1="0" y1={offsetY} x2={width} y2={offsetY} stroke="#94a3b8" strokeWidth="2" markerEnd="url(#arrowhead)" />
+                            <text x={width - 15} y={offsetY + 20} fill="#64748b" fontSize="12">x</text>
+                            
+                            <line x1={offsetX} y1={height} x2={offsetX} y2="0" stroke="#94a3b8" strokeWidth="2" markerEnd="url(#arrowhead)" />
+                            <text x={offsetX - 20} y="15" fill="#64748b" fontSize="12">y</text>
+
+                            <path d={pathData} fill="none" stroke="#3b82f6" strokeWidth="3" opacity="0.4" />
+
+                            {(() => {
+                                const m = (y2 - y1) / (x2 - x1);
+                                const lx_start = 0;
+                                const ly_start = m * (lx_start - x1) + y1;
+                                const lx_end = 6;
+                                const ly_end = m * (lx_end - x1) + y1;
+                                
+                                const color = mode === 'instant' && h < 0.2 ? "#ef4444" : "#10b981";
+                                const dash = mode === 'instant' && h >= 0.2 ? "5,5" : "";
+
+                                return (
+                                    <line 
+                                        x1={toSvgX(lx_start)} y1={toSvgY(ly_start)}
+                                        x2={toSvgX(lx_end)} y2={toSvgY(ly_end)}
+                                        stroke={color} strokeWidth="2" strokeDasharray={dash}
+                                    />
+                                );
+                            })()}
+
+                            <circle cx={toSvgX(x1)} cy={toSvgY(y1)} r="5" fill="#ef4444" stroke="white" strokeWidth="2" />
+                            <text x={toSvgX(x1) - 20} y={toSvgY(y1) + 25} fontSize="14" fill="#334155" fontWeight="bold">P(2|1)</text>
+
+                            {h > 0.1 && (
+                                <>
+                                    <circle cx={toSvgX(x2)} cy={toSvgY(y2)} r="5" fill="#10b981" stroke="white" strokeWidth="2" />
+                                    <text x={toSvgX(x2)} y={toSvgY(y2) - 15} fontSize="14" fill="#334155" fontWeight="bold">Q</text>
+                                    
+                                    <path 
+                                        d={`M ${toSvgX(x1)} ${toSvgY(y1)} L ${toSvgX(x2)} ${toSvgY(y1)} L ${toSvgX(x2)} ${toSvgY(y2)}`} 
+                                        fill="none" stroke="#cbd5e1" strokeWidth="1.5" 
+                                    />
+                                </>
+                            )}
+                        </svg>
+                    </div>
+
+                    <div className="w-full max-w-md bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="font-bold text-slate-700 text-sm">
+                                {mode === 'average' ? 'Abstand der Punkte:' : 'Annäherung h gegen 0:'}
+                            </span>
+                            <span className="font-mono text-blue-600 bg-blue-50 px-2 rounded text-sm">h = {h.toFixed(2)}</span>
+                        </div>
+                        <input 
+                            type="range" 
+                            min="0.01" max="3" step="0.01" 
+                            value={h} 
+                            onChange={(e) => setH(parseFloat(e.target.value))}
+                            className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${mode === 'average' ? 'bg-green-200' : 'bg-red-200'}`}
+                        />
+                        <div className="mt-2 text-center text-sm font-medium text-slate-600">
+                             <div className="flex items-center justify-center gap-2">
+                                <span>Steigung m ≈</span>
+                                <MathFormula tex={((f(x2)-f(x1))/(x2-x1)).toFixed(3)} />
+                            </div>
+                            {mode === 'instant' && h < 0.1 && <span className="block mt-1 text-red-600 font-bold">Limit erreicht! (Tangente)</span>}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Derivative Relationship Visualizer ---
+        const DerivativeRelVisualizer = () => {
+            const [xPos, setXPos] = useState(-2); 
+
+            const width = 600;
+            const height = 200; 
+            const scaleX = 80;
+            const scaleY_f = 30; 
+            const scaleY_f_prime = 30; 
+            
+            const midX = width / 2;
+            const midY = height / 2;
+
+            const f = (x) => (1/3) * x * x * x - x;
+            const fp = (x) => x * x - 1;
+
+            const toSvgX = (x) => midX + x * scaleX;
+            const toSvgY_f = (y) => midY - y * scaleY_f;
+            const toSvgY_fp = (y) => midY - y * scaleY_f_prime;
+
+            const generatePath = (func, toY) => {
+                let d = "";
+                for (let x = -3.5; x <= 3.5; x += 0.1) {
+                    const sx = toSvgX(x);
+                    const sy = toY(func(x));
+                    if (x === -3.5) d += `M ${sx} ${sy}`;
+                    else d += ` L ${sx} ${sy}`;
+                }
+                return d;
+            };
+
+            const pathF = useMemo(() => generatePath(f, toSvgY_f), []);
+            const pathFp = useMemo(() => generatePath(fp, toSvgY_fp), []);
+
+            const epsilon = 0.01; 
+            const isMax = Math.abs(xPos - (-1)) < epsilon;
+            const isMin = Math.abs(xPos - 1) < epsilon;
+            
+            const isRising = (xPos < -1 - epsilon) || (xPos > 1 + epsilon);
+            const isFalling = (xPos > -1 + epsilon) && (xPos < 1 - epsilon);
+
+            let statusColor = "text-slate-500";
+            let statusText = "Bewege den Slider";
+            let highlightColor = "#94a3b8"; 
+
+            if (isMax) {
+                statusColor = "text-blue-600";
+                statusText = "Hochpunkt (Steigung = 0)";
+                highlightColor = "#2563eb"; 
+            } else if (isMin) {
+                statusColor = "text-blue-600";
+                statusText = "Tiefpunkt (Steigung = 0)";
+                highlightColor = "#2563eb";
+            } else if (isRising) {
+                statusColor = "text-green-600";
+                statusText = "Graph steigt (Ableitung positiv)";
+                highlightColor = "#16a34a"; 
+            } else if (isFalling) {
+                statusColor = "text-red-600";
+                statusText = "Graph fällt (Ableitung negativ)";
+                highlightColor = "#dc2626"; 
+            }
+
+            return (
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="mb-4 bg-slate-50 p-3 rounded-lg flex flex-col items-center">
+                        <div className={`font-bold text-lg mb-1 ${statusColor}`}>{statusText}</div>
+                        <input 
+                            type="range" min="-2.5" max="2.5" step="0.05" 
+                            value={xPos} onChange={(e) => setXPos(parseFloat(e.target.value))}
+                            className="w-full max-w-sm h-2 bg-slate-300 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                        />
+                         <div className="flex justify-between w-full max-w-sm text-xs text-slate-400 mt-1">
+                            <span>x = -2.5</span>
+                            <span>x = {xPos.toFixed(2)}</span>
+                            <span>x = 2.5</span>
+                        </div>
+                    </div>
+
+                    <div className="relative">
+                        <div 
+                            className="absolute top-0 bottom-0 border-l-2 border-dashed border-slate-800 z-10 pointer-events-none transition-all duration-75"
+                            style={{ left: `${toSvgX(xPos)}px` }}
+                        >
+                            <div className="bg-slate-800 text-white text-xs px-1 rounded absolute -top-2 -translate-x-1/2">x</div>
+                        </div>
+
+                        <div className="mb-2 relative border border-slate-100 rounded bg-slate-50/50">
+                            <div className="absolute top-2 left-2 font-bold text-slate-400">f(x) - Ausgangsfunktion</div>
+                            <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-hidden">
+                                <line x1="0" y1={midY} x2={width} y2={midY} stroke="#cbd5e1" strokeWidth="1" />
+                                <line x1={midX} y1="0" x2={midX} y2={height} stroke="#cbd5e1" strokeWidth="1" />
+                                <path d={pathF} fill="none" stroke="#64748b" strokeWidth="3" />
+                                {(() => {
+                                    const m = fp(xPos);
+                                    const x0 = xPos;
+                                    const y0 = f(x0);
+                                    const dx = 0.6; 
+                                    const x_start = x0 - dx;
+                                    const x_end = x0 + dx;
+                                    const y_start = y0 - m * dx;
+                                    const y_end = y0 + m * dx;
+                                    return (
+                                        <line 
+                                            x1={toSvgX(x_start)} y1={toSvgY_f(y_start)}
+                                            x2={toSvgX(x_end)} y2={toSvgY_f(y_end)}
+                                            stroke={highlightColor} strokeWidth="3"
+                                        />
+                                    );
+                                })()}
+                                <circle cx={toSvgX(xPos)} cy={toSvgY_f(f(xPos))} r="5" fill={highlightColor} stroke="white" strokeWidth="2" />
+                            </svg>
+                        </div>
+
+                        <div className="relative border border-slate-100 rounded bg-slate-50/50">
+                             <div className="absolute top-2 left-2 font-bold text-slate-400">f'(x) - Ableitungsfunktion</div>
+                             <div className="absolute inset-0 flex flex-col opacity-10 pointer-events-none">
+                                 <div className="h-1/2 bg-green-500 border-b border-slate-300"></div> 
+                                 <div className="h-1/2 bg-red-500"></div>   
+                             </div>
+
+                            <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-hidden relative z-0">
+                                <line x1="0" y1={midY} x2={width} y2={midY} stroke="#94a3b8" strokeWidth="2" /> 
+                                <line x1={midX} y1="0" x2={midX} y2={height} stroke="#cbd5e1" strokeWidth="1" />
+                                <path d={pathFp} fill="none" stroke="#475569" strokeWidth="2" strokeDasharray="4 2" />
+                                <path d={pathFp} fill="none" stroke={highlightColor} strokeWidth="3" />
+                                <circle cx={toSvgX(-1)} cy={midY} r="4" fill="#2563eb" opacity="0.5" />
+                                <circle cx={toSvgX(1)} cy={midY} r="4" fill="#2563eb" opacity="0.5" />
+                                <circle cx={toSvgX(xPos)} cy={toSvgY_fp(fp(xPos))} r="5" fill={highlightColor} stroke="white" strokeWidth="2" />
+                                <text x={toSvgX(xPos) + 10} y={toSvgY_fp(fp(xPos)) - 10} fontSize="12" fill={highlightColor} fontWeight="bold">
+                                    {fp(xPos).toFixed(2)}
+                                </text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- View Components ---
+
+        const ViewAverage = ({ goBack }) => {
+            const [h, setH] = useState(2.0);
+            return (
+                <div className="animate-in fade-in zoom-in duration-300">
+                    <button onClick={goBack} className="flex items-center text-blue-600 font-bold mb-6 hover:underline"><Icon name="ArrowLeft" size={18} className="mr-1"/> Zurück zum Menü</button>
+                    <h2 className="text-3xl font-bold text-slate-800 mb-2">Mittlere Änderungsrate</h2>
+                    <p className="text-xl text-green-600 mb-6 font-light">Die Sekante und der Differenzenquotient</p>
+                    
+                    <div className="grid lg:grid-cols-2 gap-8">
+                        <div>
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+                                <h3 className="font-bold text-lg mb-4 text-slate-700">Das Konzept</h3>
+                                <p className="mb-4 text-slate-600 leading-relaxed">
+                                    Die mittlere Änderungsrate beschreibt die durchschnittliche Veränderung einer Funktion in einem Intervall <MathFormula tex="[x_1; x_2]" />.
+                                    Geometrisch entspricht sie der Steigung der <strong>Sekante</strong> durch die Punkte <MathFormula tex="P" /> und <MathFormula tex="Q" />.
+                                </p>
+                                <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+                                    <div className="font-bold text-blue-900 mb-1">Formel (Differenzenquotient):</div>
+                                    <div className="py-2 flex justify-center">
+                                        <MathFormula display={true} tex="m = \frac{f(x_2) - f(x_1)}{x_2 - x_1} = \frac{y_2 - y_1}{x_2 - x_1}" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-orange-50 p-4 rounded-xl border border-orange-200">
+                                <h4 className="font-bold text-orange-800 mb-2 flex items-center"><Icon name="Activity" size={18} className="mr-2"/>Typische Aufgaben</h4>
+                                <ul className="list-disc list-inside text-sm text-orange-900 space-y-1">
+                                    <li>"Berechnen Sie die durchschnittliche Geschwindigkeit im Zeitraum..."</li>
+                                    <li>"Bestimmen Sie die Steigung der Sekante durch P und Q."</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <PreciseGraph mode="average" h={h} setH={setH} />
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ViewInstant = ({ goBack }) => {
+            const [h, setH] = useState(1.5);
+            return (
+                <div className="animate-in fade-in zoom-in duration-300">
+                    <button onClick={goBack} className="flex items-center text-blue-600 font-bold mb-6 hover:underline"><Icon name="ArrowLeft" size={18} className="mr-1"/> Zurück zum Menü</button>
+                    <h2 className="text-3xl font-bold text-slate-800 mb-2">Momentane Änderungsrate</h2>
+                    <p className="text-xl text-red-500 mb-6 font-light">Die Tangente und die h-Methode</p>
+                    
+                    <div className="grid lg:grid-cols-2 gap-8">
+                        <div>
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+                                <h3 className="font-bold text-lg mb-4 text-slate-700">Von der Sekante zur Tangente</h3>
+                                <p className="mb-4 text-slate-600 leading-relaxed">
+                                    Wir wollen die Steigung an einem einzigen Punkt <MathFormula tex="x_0" /> wissen. Dazu lassen wir den zweiten Punkt Q auf den Punkt P zulaufen.
+                                    Der Abstand <MathFormula tex="h" /> wird unendlich klein (<MathFormula tex="h \to 0" />).
+                                </p>
+                                <div className="bg-red-50 p-4 rounded-lg border-l-4 border-red-500">
+                                    <div className="font-bold text-red-900 mb-1">Formel (Differentialquotient):</div>
+                                    <div className="py-2 flex justify-center">
+                                        <MathFormula display={true} tex="f'(x_0) = \lim_{h \to 0} \frac{f(x_0 + h) - f(x_0)}{h}" />
+                                    </div>
+                                </div>
+                            </div>
+                             <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200">
+                                <h4 className="font-bold text-indigo-800 mb-2 flex items-center"><Icon name="Activity" size={18} className="mr-2"/>Typische Aufgaben</h4>
+                                <ul className="list-disc list-inside text-sm text-indigo-900 space-y-1">
+                                    <li>"Bestimmen Sie die momentane Änderungsrate an der Stelle x=..."</li>
+                                    <li>"Wie schnell ändert sich der Bestand zum Zeitpunkt t=...?"</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <PreciseGraph mode="instant" h={h} setH={setH} />
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ViewDerivativeFunc = ({ goBack }) => {
+            return (
+                <div className="animate-in fade-in zoom-in duration-300">
+                    <button onClick={goBack} className="flex items-center text-blue-600 font-bold mb-6 hover:underline"><Icon name="ArrowLeft" size={18} className="mr-1"/> Zurück zum Menü</button>
+                    <h2 className="text-3xl font-bold text-slate-800 mb-2">Die Ableitungsfunktion</h2>
+                    <p className="text-xl text-purple-600 mb-6 font-light">Der Graph der Steigungen</p>
+
+                    <div className="grid lg:grid-cols-12 gap-8 mb-8">
+                        <div className="lg:col-span-8">
+                            <h3 className="font-bold text-slate-700 mb-4 flex items-center">
+                                <span className="bg-purple-100 text-purple-700 p-1 rounded mr-2"><Icon name="Activity" size={20}/></span>
+                                Interaktiver Ableitungs-Scanner
+                            </h3>
+                            <DerivativeRelVisualizer />
+                        </div>
+                        
+                        <div className="lg:col-span-4 space-y-4">
+                            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                                <h4 className="font-bold text-slate-800 mb-3">Zusammenhang verstehen</h4>
+                                <ul className="space-y-3 text-sm">
+                                    <li className="flex items-start">
+                                        <span className="w-3 h-3 rounded-full bg-green-500 mt-1 mr-2 shrink-0"></span>
+                                        <div>
+                                            <strong>Graph steigt ↗</strong><br/>
+                                            <span className="text-slate-500">Ableitung im positiven Bereich (+)</span>
+                                        </div>
+                                    </li>
+                                    <li className="flex items-start">
+                                        <span className="w-3 h-3 rounded-full bg-red-500 mt-1 mr-2 shrink-0"></span>
+                                        <div>
+                                            <strong>Graph fällt ↘</strong><br/>
+                                            <span className="text-slate-500">Ableitung im negativen Bereich (-)</span>
+                                        </div>
+                                    </li>
+                                    <li className="flex items-start">
+                                        <span className="w-3 h-3 rounded-full bg-blue-600 mt-1 mr-2 shrink-0"></span>
+                                        <div>
+                                            <strong>Extremstelle (HP/TP)</strong><br/>
+                                            <span className="text-slate-500">Ableitung ist Null (0)</span>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div className="bg-slate-800 text-white p-5 rounded-xl shadow-lg">
+                                <h4 className="text-center font-bold text-lg mb-4 text-blue-300 border-b border-slate-600 pb-2">Die N-E-Regel</h4>
+                                <div className="flex justify-center items-center text-center font-mono text-sm gap-4">
+                                    <div>
+                                        <div className="text-2xl font-bold text-green-400">N</div>
+                                        <div className="text-xs text-slate-400">Nullstelle</div>
+                                    </div>
+                                    <div className="text-slate-500 text-xl">→</div>
+                                    <div>
+                                        <div className="text-2xl font-bold text-blue-400">E</div>
+                                        <div className="text-xs text-slate-400">Extremstelle</div>
+                                    </div>
+                                </div>
+                                <div className="text-center mt-4 text-xs text-slate-300 italic">
+                                    "Die Nullstellen der Ableitung sind die Extremstellen der Funktion."
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ViewRules = ({ goBack }) => {
+            const rules = [
+                { name: "Potenzregel", formula: "f(x) = x^n \\rightarrow f'(x) = n \\cdot x^{n-1}", example: "f(x) = x^5 \\rightarrow f'(x) = 5x^4" },
+                { name: "Faktorregel", formula: "f(x) = c \\cdot g(x) \\rightarrow f'(x) = c \\cdot g'(x)", example: "f(x) = 3x^2 \\rightarrow f'(x) = 6x" },
+                { name: "Summenregel", formula: "f(x) = g(x) + h(x) \\rightarrow f'(x) = g'(x) + h'(x)", example: "f(x) = x^2 + x \\rightarrow f'(x) = 2x + 1" },
+                { name: "Konstantenregel", formula: "f(x) = c \\rightarrow f'(x) = 0", example: "f(x) = 5 \\rightarrow f'(x) = 0" }
+            ];
+
+            return (
+                <div className="animate-in fade-in zoom-in duration-300">
+                    <button onClick={goBack} className="flex items-center text-blue-600 font-bold mb-6 hover:underline"><Icon name="ArrowLeft" size={18} className="mr-1"/> Zurück zum Menü</button>
+                    <h2 className="text-3xl font-bold text-slate-800 mb-6">Ableitungsregeln</h2>
+                    
+                    <div className="grid md:grid-cols-2 gap-6">
+                        {rules.map((r, i) => (
+                            <div key={i} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                                <h4 className="text-blue-600 font-bold text-lg mb-2">{r.name}</h4>
+                                <div className="bg-slate-50 p-3 rounded mb-3 border border-slate-100 flex justify-center">
+                                    <MathFormula tex={r.formula} />
+                                </div>
+                                <div className="text-slate-600 text-sm border-t pt-2 mt-2">
+                                    <span className="font-semibold text-slate-400 uppercase text-xs">Beispiel:</span> <br/>
+                                    <div className="mt-1">
+                                        <MathFormula tex={r.example} />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    
+                    <div className="mt-8 bg-yellow-50 p-4 rounded-xl border border-yellow-200">
+                        <h4 className="font-bold text-yellow-800 mb-2">Achtung Fehlerquelle:</h4>
+                        <div className="text-sm text-yellow-900">
+                            Bei <MathFormula tex="f(x) = \frac{1}{x^n}" /> erst umschreiben zu <MathFormula tex="x^{-n}" />.<br/>
+                            Dann ableiten: <MathFormula tex="f'(x) = -n \cdot x^{-n-1}" />.
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ViewTangent = ({ goBack }) => {
+            return (
+                <div className="animate-in fade-in zoom-in duration-300">
+                    <button onClick={goBack} className="flex items-center text-blue-600 font-bold mb-6 hover:underline"><Icon name="ArrowLeft" size={18} className="mr-1"/> Zurück zum Menü</button>
+                    <h2 className="text-3xl font-bold text-slate-800 mb-2">Tangente & Normale</h2>
+                    <p className="text-xl text-teal-600 mb-6 font-light">Geradengleichungen aufstellen</p>
+
+                    <div className="grid md:grid-cols-2 gap-8 mb-8">
+                        {/* Tangente Card */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <h3 className="font-bold text-lg text-slate-700 mb-4 border-b pb-2">Die Tangente</h3>
+                            <p className="text-sm text-slate-600 mb-4">Eine Gerade, die den Graphen in einem Punkt berührt.</p>
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-blue-100 text-blue-700 w-8 h-8 rounded-full flex items-center justify-center font-bold">1</div>
+                                    <div className="text-sm">Funktionswert berechnen: <br/> <MathFormula tex="y_0 = f(x_0)" /></div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-blue-100 text-blue-700 w-8 h-8 rounded-full flex items-center justify-center font-bold">2</div>
+                                    <div className="text-sm">Steigung berechnen: <br/> <MathFormula tex="m_t = f'(x_0)" /></div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-blue-100 text-blue-700 w-8 h-8 rounded-full flex items-center justify-center font-bold">3</div>
+                                    <div className="text-sm">Einsetzen in <MathFormula tex="y = m_t \cdot x + b_t" /> und <MathFormula tex="b_t" /> bestimmen.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Normale Card */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <h3 className="font-bold text-lg text-slate-700 mb-4 border-b pb-2">Die Normale</h3>
+                            <p className="text-sm text-slate-600 mb-4">Eine Gerade, die <strong>senkrecht</strong> auf der Tangente steht.</p>
+                            <div className="bg-teal-50 p-4 rounded-lg text-center mb-4">
+                                <div className="text-sm text-teal-800 mb-1">Steigung der Normalen:</div>
+                                <MathFormula tex="m_n = -\frac{1}{m_t}" className="text-lg" />
+                            </div>
+                             <div className="space-y-4 mt-4 border-t pt-4">
+                                <div className="text-sm font-semibold text-slate-700">Vorgehen wie bei der Tangente:</div>
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-teal-100 text-teal-700 w-8 h-8 rounded-full flex items-center justify-center font-bold">3</div>
+                                    <div className="text-sm">
+                                        Einsetzen in <MathFormula tex="y = m_n \cdot x + b_n" />.<br/>
+                                        Bestimme <MathFormula tex="b_n" /> mit Punkt <MathFormula tex="P(x_0|y_0)" />.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Steigungswinkel Section */}
+                    <div className="bg-slate-100 p-6 rounded-xl border border-slate-200">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+                            <h4 className="font-bold text-slate-700 text-lg">Steigungswinkel <MathFormula tex="\alpha" /> berechnen</h4>
+                            <div className="text-xs bg-orange-100 text-orange-800 px-3 py-1 rounded-full font-bold mt-2 md:mt-0">
+                                Wichtig: Taschenrechner auf DEG (Gradmaß)!
+                            </div>
+                        </div>
+                        
+                        <div className="grid md:grid-cols-2 gap-6">
+                            {/* Angle for Tangent */}
+                            <div className="bg-white p-4 rounded-lg border border-slate-200">
+                                <h5 className="font-bold text-blue-600 mb-2">1. Winkel der Tangente</h5>
+                                <p className="text-sm text-slate-600 mb-3">Der Winkel <MathFormula tex="\alpha_t" /> zur x-Achse.</p>
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span>Ansatz:</span>
+                                        <MathFormula tex="\tan(\alpha_t) = m_t" />
+                                    </div>
+                                    <div className="w-full border-t border-slate-100 my-2"></div>
+                                    <div className="flex items-center justify-between font-bold bg-blue-50 p-2 rounded">
+                                        <span>Rechnung:</span>
+                                        <MathFormula tex="\alpha_t = \tan^{-1}(m_t)" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Angle for Normal */}
+                            <div className="bg-white p-4 rounded-lg border border-slate-200">
+                                <h5 className="font-bold text-teal-600 mb-2">2. Winkel der Normalen</h5>
+                                <p className="text-sm text-slate-600 mb-3">Der Winkel <MathFormula tex="\alpha_n" /> zur x-Achse.</p>
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span>Ansatz:</span>
+                                        <MathFormula tex="\tan(\alpha_n) = m_n" />
+                                    </div>
+                                    <div className="w-full border-t border-slate-100 my-2"></div>
+                                    <div className="flex items-center justify-between font-bold bg-teal-50 p-2 rounded">
+                                        <span>Rechnung:</span>
+                                        <MathFormula tex="\alpha_n = \tan^{-1}(m_n)" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-4 italic">
+                            Hinweis: <MathFormula tex="\tan^{-1}" /> ist auf dem Taschenrechner meist die Taste [Shift] + [tan].
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Exam Component (NEW) ---
+        const ExamView = ({ goBack }) => {
+            const [revealed, setRevealed] = useState({});
+
+            const toggleReveal = (id) => {
+                setRevealed(prev => ({ ...prev, [id]: !prev[id] }));
+            };
+
+            const tasks = [
+                {
+                    id: 1,
+                    title: "Aufgabe 1: Mittlere Änderungsrate",
+                    context: "Ein Heißluftballon steigt auf. Seine Höhe in Metern wird beschrieben durch die Funktion $h(t) = t^3 - 12t^2 + 60t$ (t in Minuten).",
+                    parts: [
+                        { label: "a)", text: "Berechne die Höhe des Ballons nach 2 Minuten und nach 5 Minuten.", solution: "$h(2) = 8 - 48 + 120 = 80 \\text{ m}. \\\\ h(5) = 125 - 300 + 300 = 125 \\text{ m}.$" },
+                        { label: "b)", text: "Berechne die mittlere Steiggeschwindigkeit im Intervall $[2; 5]$.", solution: "$m = \\frac{h(5)-h(2)}{5-2} = \\frac{125-80}{3} = \\frac{45}{3} = 15 \\text{ m/min}.$" },
+                        { label: "c)", text: "Interpretiere das Ergebnis aus b) im Sachzusammenhang.", solution: "Der Ballon steigt im Zeitraum von Minute 2 bis Minute 5 durchschnittlich um 15 Meter pro Minute." }
+                    ]
+                },
+                {
+                    id: 2,
+                    title: "Aufgabe 2: Momentane Änderungsrate",
+                    context: "Gegeben ist die Funktion $f(x) = 2x^2$. Wir betrachten die Stelle $x_0 = 1$.",
+                    parts: [
+                        { label: "a)", text: "Stelle den Differenzenquotienten für das Intervall $[1; 1+h]$ auf.", solution: "$\\frac{f(1+h)-f(1)}{h} = \\frac{2(1+h)^2 - 2(1)^2}{h} = \\frac{2(1+2h+h^2)-2}{h} = \\frac{2+4h+2h^2-2}{h} = \\frac{4h+2h^2}{h} = 4+2h$" },
+                        { label: "b)", text: "Bestimme den Grenzwert für $h \\to 0$ (h-Methode).", solution: "$f'(1) = \\lim_{h \\to 0} (4+2h) = 4.$" },
+                        { label: "c)", text: "Was bedeutet dieser Wert geometrisch für den Graphen von f?", solution: "Die Steigung der Tangente an den Graphen im Punkt P(1|2) beträgt 4." }
+                    ]
+                },
+                {
+                    id: 3,
+                    title: "Aufgabe 3: Zusammenhang f und f'",
+                    context: "Betrachte den Graphen einer Funktion f. Der Graph hat einen Hochpunkt bei $H(-2|4)$ und einen Tiefpunkt bei $T(2|0)$.",
+                    parts: [
+                        { label: "a)", text: "An welchen Stellen hat die Ableitungsfunktion f' ihre Nullstellen?", solution: "Bei $x = -2$ und bei $x = 2$ (da dort Extremstellen von f sind)." },
+                        { label: "b)", text: "In welchem Bereich verläuft der Graph von f' unterhalb der x-Achse (negativ)?", solution: "Im Bereich $]-2; 2[$, da der Graph von f dort fällt (vom Hochpunkt zum Tiefpunkt)." },
+                        { label: "c)", text: "Was lässt sich über die Steigung von f für $x > 2$ aussagen?", solution: "Da der Graph nach dem Tiefpunkt wieder steigt, muss $f'(x)$ für $x > 2$ positiv sein." }
+                    ]
+                },
+                {
+                    id: 4,
+                    title: "Aufgabe 4: Ableitungsregeln",
+                    context: "Leite die folgenden Funktionen ab.",
+                    parts: [
+                        { label: "a)", text: "$f(x) = \\frac{1}{4}x^4 - \\frac{2}{3}x^3 + 5$", solution: "$f'(x) = x^3 - 2x^2$" },
+                        { label: "b)", text: "$g(x) = 3x^2 + \\frac{1}{x^2}$", solution: "Umschreiben: $g(x) = 3x^2 + x^{-2} \\\\ g'(x) = 6x - 2x^{-3} = 6x - \\frac{2}{x^3}$" },
+                        { label: "c)", text: "$h(x) = a \\cdot x^3 + t$ (Variable ist x)", solution: "$h'(x) = 3ax^2$ (t ist eine Konstante und fällt weg)." }
+                    ]
+                },
+                {
+                    id: 5,
+                    title: "Aufgabe 5: Tangente & Normale",
+                    context: "Gegeben ist die Funktion $f(x) = x^2 - 4x + 3$. Gesucht sind Tangente und Normale an der Stelle $x_0 = 3$.",
+                    parts: [
+                        { label: "a)", text: "Bestimme die Gleichung der Tangente $t(x)$.", solution: "1. $y_0 = f(3) = 9-12+3 = 0$. P(3|0). \\\\ 2. $f'(x)=2x-4$. $m_t = f'(3) = 6-4 = 2$. \\\\ 3. $0 = 2\\cdot3 + b_t \\Rightarrow 0 = 6 + b_t \\Rightarrow b_t = -6$. \\\\ $\\Rightarrow t(x) = 2x - 6$." },
+                        { label: "b)", text: "Bestimme den Steigungswinkel der Tangente.", solution: "$\\alpha = \\tan^{-1}(2) \\approx 63,4°.$" },
+                        { label: "c)", text: "Bestimme die Gleichung der Normalen $n(x)$.", solution: "$m_n = -\\frac{1}{m_t} = -0,5$. \\\\ Einsetzen in P(3|0): $0 = -0,5 \\cdot 3 + b_n \\Rightarrow 0 = -1,5 + b_n \\Rightarrow b_n = 1,5$. \\\\ $\\Rightarrow n(x) = -0,5x + 1,5$." }
+                    ]
+                }
+            ];
+
+            return (
+                <div className="animate-in fade-in zoom-in duration-300 pb-20">
+                    <div className="bg-red-900 text-white p-8 -mx-4 md:-mx-8 mb-8 shadow-lg">
+                        <button onClick={goBack} className="flex items-center text-red-200 font-bold mb-4 hover:text-white transition-colors"><Icon name="ArrowLeft" size={18} className="mr-1"/> Zurück zum Menü</button>
+                        <h2 className="text-4xl font-bold mb-2">Klausur-Simulation</h2>
+                        <p className="text-red-100 opacity-80">Bearbeite die Aufgaben schriftlich. Klicke auf "Lösung", um deine Ergebnisse zu prüfen.</p>
+                    </div>
+
+                    <div className="space-y-12 max-w-4xl mx-auto">
+                        {tasks.map((task, idx) => (
+                            <div key={task.id} className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+                                <div className="bg-slate-50 p-6 border-b border-slate-100">
+                                    <h3 className="font-bold text-xl text-slate-800 mb-2">{task.title}</h3>
+                                    <div className="text-slate-600 bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+                                        <TextWithMath text={task.context} />
+                                    </div>
+                                </div>
+                                <div className="p-6 space-y-6">
+                                    {task.parts.map((part, pIdx) => (
+                                        <div key={pIdx} className="border-b border-slate-100 last:border-0 pb-6 last:pb-0">
+                                            <div className="flex gap-3 mb-3">
+                                                <span className="font-bold text-slate-700 bg-slate-200 w-8 h-8 flex items-center justify-center rounded-full shrink-0">{part.label}</span>
+                                                <div className="mt-1 text-slate-800 font-medium">
+                                                    <TextWithMath text={part.text} />
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="ml-11">
+                                                <button 
+                                                    onClick={() => toggleReveal(`${task.id}-${pIdx}`)}
+                                                    className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 mb-2"
+                                                >
+                                                    {revealed[`${task.id}-${pIdx}`] ? <Icon name="ChevronUp" size={16}/> : <Icon name="ChevronDown" size={16}/>}
+                                                    {revealed[`${task.id}-${pIdx}`] ? "Lösung verbergen" : "Lösung anzeigen"}
+                                                </button>
+                                                
+                                                {revealed[`${task.id}-${pIdx}`] && (
+                                                    <div className="bg-green-50 p-4 rounded-lg border border-green-200 text-green-900 animate-in fade-in slide-in-from-top-2">
+                                                        <TextWithMath text={part.solution} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Main App Controller ---
+        const App = () => {
+            const [view, setView] = useState('menu'); 
+
+            // Layout Container
+            const Layout = ({ children }) => (
+                <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800">
+                    <header className="bg-gradient-to-r from-slate-900 to-slate-800 text-white py-6 px-4 shadow-lg sticky top-0 z-50">
+                        <div className="max-w-5xl mx-auto flex justify-between items-center">
+                            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView('menu')}>
+                                <div className="bg-white/10 p-2 rounded-lg">
+                                    <Icon name="Activity" size={24} className="text-blue-400" />
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold tracking-tight">Mathe Rückblick</h1>
+                                    <p className="text-xs text-slate-400 uppercase tracking-widest font-semibold">Kapitel 3 • Ableitung</p>
+                                </div>
+                            </div>
+                            {view !== 'menu' && (
+                                <button onClick={() => setView('menu')} className="text-sm font-semibold bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full transition-colors">
+                                    Menü
+                                </button>
+                            )}
+                        </div>
+                    </header>
+
+                    <main className="flex-grow max-w-5xl mx-auto w-full p-4 md:p-8">
+                        {children}
+                    </main>
+
+                    <footer className="bg-slate-100 py-8 text-center text-slate-400 text-sm border-t border-slate-200 mt-auto">
+                        <p className="font-medium">Vorbereitung auf die Klausur</p>
+                        <p className="mt-1">Lambacher Schweizer • Klasse 10/11</p>
+                    </footer>
+                </div>
+            );
+
+            // Menu View
+            if (view === 'menu') {
+                const menuItems = [
+                    { id: 'average', title: 'Mittlere Änderungsrate', sub: 'Sekante & Differenzenquotient', icon: 'TrendingUp', color: 'bg-green-500' },
+                    { id: 'instant', title: 'Momentane Änderungsrate', sub: 'Tangente & h-Methode', icon: 'Activity', color: 'bg-red-500' },
+                    { id: 'derivative', title: 'Die Ableitungsfunktion', sub: 'f vs. f\' (NEW-Regel)', icon: 'GitBranch', color: 'bg-purple-500' },
+                    { id: 'rules', title: 'Ableitungsregeln', sub: 'Potenz-, Faktor-, Summenregel', icon: 'BookOpen', color: 'bg-blue-500' },
+                    { id: 'tangent', title: 'Tangente & Normale', sub: 'Aufstellen & Winkel berechnen', icon: 'Calculator', color: 'bg-teal-500' },
+                ];
+
+                return (
+                    <Layout>
+                        <div className="text-center mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <h2 className="text-3xl font-bold text-slate-800 mb-2">Wähle dein Thema</h2>
+                            <p className="text-slate-500">Was möchtest du wiederholen?</p>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                            {menuItems.map((item) => (
+                                <div 
+                                    key={item.id} 
+                                    onClick={() => setView(item.id)}
+                                    className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 cursor-pointer card-hover transition-all-300 group"
+                                >
+                                    <div className={`${item.color} w-12 h-12 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform shadow-md`}>
+                                        <Icon name={item.icon} size={24} />
+                                    </div>
+                                    <h3 className="font-bold text-lg text-slate-800 mb-1">{item.title}</h3>
+                                    <p className="text-sm text-slate-500">{item.sub}</p>
+                                    <div className="mt-4 flex items-center text-sm font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        Starten <Icon name="ArrowRight" size={16} className="ml-1" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Exam Button */}
+                        <div className="border-t pt-8 text-center">
+                             <button 
+                                onClick={() => setView('exam')}
+                                className="bg-red-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-red-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center mx-auto gap-3"
+                             >
+                                <Icon name="GraduationCap" size={28} />
+                                Klausur-Simulation starten
+                             </button>
+                             <p className="text-slate-400 text-sm mt-3">5 komplexe Aufgaben (a-c) zu allen Themen</p>
+                        </div>
+                    </Layout>
+                );
+            }
+
+            return (
+                <Layout>
+                    {view === 'average' && <ViewAverage goBack={() => setView('menu')} />}
+                    {view === 'instant' && <ViewInstant goBack={() => setView('menu')} />}
+                    {view === 'derivative' && <ViewDerivativeFunc goBack={() => setView('menu')} />}
+                    {view === 'rules' && <ViewRules goBack={() => setView('menu')} />}
+                    {view === 'tangent' && <ViewTangent goBack={() => setView('menu')} />}
+                    {view === 'exam' && <ExamView goBack={() => setView('menu')} />}
+                </Layout>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
